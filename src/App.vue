@@ -163,7 +163,9 @@ provide('i18n', i18n)
             </v-col>
 
             <v-col cols="12" lg="6" class="right-column">
-              <ResultsPanel />
+              <div class="scroll-pane">
+                <ResultsPanel />
+              </div>
             </v-col>
           </v-row>
         </v-container>
@@ -254,8 +256,6 @@ provide('i18n', i18n)
   display: flex;
   flex-direction: column;
   padding: 0 0 0 6px;
-  overflow-y: auto;
-  overflow-x: hidden;
 }
 
 /* Scroll panes - critical for independent scrolling */
