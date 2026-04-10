@@ -4,11 +4,16 @@ import { useCalculatorStore } from '@/stores/calculator'
 import { useLocale } from '@/composables/useLocale'
 import { calculate } from '@/lib/calc'
 import { exportConfigAsJSON, exportResultsAsCSV } from '@/lib/export'
+import { importConfigFromJSON } from '@/lib/import'
 import PhaseShareDonut from '@/components/Charts/PhaseShareDonut.vue'
 
 const store = useCalculatorStore()
 const { i18n } = useLocale()
 const shouldCalculate = ref(false)
+const fileInput = ref<HTMLInputElement | null>(null)
+const importMessage = ref('')
+const importStatus = ref<'success' | 'error'>('success')
+const isImportAlertVisible = ref(false)
 
 const calculationResult = computed(() => {
   if (!shouldCalculate.value) {
@@ -29,6 +34,40 @@ const autoCalculation = computed(() => {
 const displayResult = computed(() => {
   return shouldCalculate.value ? calculationResult.value : autoCalculation.value
 })
+
+function openImportDialog() {
+  fileInput.value?.click()
+}
+
+function showImportStatus(type: 'success' | 'error', detailKey: string, detail?: string) {
+  importStatus.value = type
+  importMessage.value = detail ? `${i18n.t(detailKey)} ${detail}` : i18n.t(detailKey)
+  isImportAlertVisible.value = true
+}
+
+async function handleImportChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+
+  // Ignore canceled file selections.
+  if (!file) {
+    return
+  }
+
+  try {
+    // Load the exported JSON back into the calculator state.
+    const jsonText = await file.text()
+    const nextState = importConfigFromJSON(jsonText)
+    store.replaceState(nextState)
+    shouldCalculate.value = true
+    showImportStatus('success', 'importSuccess')
+  } catch (error) {
+    const message = error instanceof Error ? error.message : i18n.t('importError')
+    showImportStatus('error', 'importError', message)
+  } finally {
+    input.value = ''
+  }
+}
 </script>
 
 <template>
@@ -36,6 +75,13 @@ const displayResult = computed(() => {
     <v-card-title class="d-flex justify-space-between align-center flex-wrap ga-2 pa-4 pb-2 results-card-header">
       <span class="text-h6">{{ i18n.t('results') }}</span>
       <div class="d-flex ga-2">
+        <input
+          ref="fileInput"
+          type="file"
+          accept=".json,application/json"
+          class="d-none"
+          @change="handleImportChange"
+        >
         <v-btn
           v-if="false"
           color="primary"
@@ -44,6 +90,15 @@ const displayResult = computed(() => {
           @click="triggerCalculation"
         >
           {{ i18n.t('calculate') }}
+        </v-btn>
+        <v-btn
+          color="secondary"
+          prepend-icon="mdi-upload"
+          variant="outlined"
+          density="compact"
+          @click="openImportDialog"
+        >
+          {{ i18n.t('import') }}
         </v-btn>
         <v-menu>
           <template #activator="{ props: menuProps }">
@@ -74,6 +129,18 @@ const displayResult = computed(() => {
       </div>
     </v-card-title>
     <v-card-text class="pa-4 pt-2 results-card-content">
+      <v-alert
+        v-if="isImportAlertVisible"
+        :type="importStatus"
+        variant="tonal"
+        density="compact"
+        closable
+        class="mb-4"
+        @click:close="isImportAlertVisible = false"
+      >
+        {{ importMessage }}
+      </v-alert>
+
       <div v-if="displayResult">
         <!-- Errors -->
         <v-alert
@@ -274,4 +341,3 @@ const displayResult = computed(() => {
   }
 }
 </style>
-
