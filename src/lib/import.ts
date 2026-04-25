@@ -20,6 +20,18 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value)
 }
 
+function isCurrentUnit(value: unknown): value is CurrentUnit {
+  return typeof value === 'string' && CURRENT_UNITS.has(value as CurrentUnit)
+}
+
+function isDurationUnit(value: unknown): value is DurationUnit {
+  return typeof value === 'string' && DURATION_UNITS.has(value as DurationUnit)
+}
+
+function isFrequencyUnit(value: unknown): value is FrequencyUnit {
+  return typeof value === 'string' && FREQUENCY_UNITS.has(value as FrequencyUnit)
+}
+
 function parseBatteryConfig(value: unknown): BatteryConfig {
   if (!isRecord(value)) {
     throw new Error('Battery configuration is missing or invalid.')
@@ -64,11 +76,11 @@ function parsePhase(value: unknown, index: number): Phase {
     typeof name !== 'string' ||
     typeof isDeepSleep !== 'boolean' ||
     !isFiniteNumber(current) ||
-    !CURRENT_UNITS.has(currentUnit as CurrentUnit) ||
+    !isCurrentUnit(currentUnit) ||
     !isFiniteNumber(duration) ||
-    !DURATION_UNITS.has(durationUnit as DurationUnit) ||
+    !isDurationUnit(durationUnit) ||
     !isFiniteNumber(frequency) ||
-    !FREQUENCY_UNITS.has(frequencyUnit as FrequencyUnit)
+    !isFrequencyUnit(frequencyUnit)
   ) {
     throw new Error(`Phase ${index + 1} contains invalid values.`)
   }
@@ -97,7 +109,7 @@ function parseLeakageCurrent(value: unknown, index: number): LeakageCurrent {
     typeof id !== 'string' ||
     typeof label !== 'string' ||
     !isFiniteNumber(current) ||
-    !CURRENT_UNITS.has(currentUnit as CurrentUnit)
+    !isCurrentUnit(currentUnit)
   ) {
     throw new Error(`Leakage current ${index + 1} contains invalid values.`)
   }
